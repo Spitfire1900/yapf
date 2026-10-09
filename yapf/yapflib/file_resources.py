@@ -22,16 +22,12 @@ import fnmatch
 import os
 import re
 import sys
+import tomllib
 from configparser import ConfigParser
 from tokenize import detect_encoding
 
 from yapf.yapflib import errors
 from yapf.yapflib import style
-
-if sys.version_info >= (3, 11):
-  import tomllib
-else:
-  import tomli as tomllib
 
 CR = '\r'
 LF = '\n'

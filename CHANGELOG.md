@@ -7,11 +7,13 @@
 - Use LibCST 1.9.x as the sole Python parser and lower its immutable CST into
   a small mutable layout representation, retaining the existing formatting
   policies and line-breaking algorithm.
-- Require Python 3.9 or newer. `FormatTree` now accepts `libcst.Module`.
+- Require Python 3.11 or newer. `FormatTree` now accepts `libcst.Module`.
 - Report LibCST syntax diagnostics with filename, line, and column. Inputs
   formerly admitted only by the legacy grammar may now be rejected.
 
 ### Removed
+- The `tomli` backport and Python 3.9/3.10 compatibility paths; use the
+  Python 3.11+ standard-library `tomllib` for configuration files.
 - Vendored `_ylib2to3`, its tokenizer, grammars, parser generator, fixer and
   pattern machinery, and grammar-cache handling.
 - The alternate AST/tokenize front end, `FormatAST`, and the old `yapf.pytree`

@@ -40,7 +40,7 @@ $ pipx run --spec='tox<4' tox -e bdist_wheel -e sdist
     $ xargs -t -n1 pyenv install  < .python-version
     ```
 
-1. Run tests against Python 3.9 - 3.14 with
+1. Run tests against Python 3.11 - 3.15 with
     ```bash
     $ pipx run --spec='tox<4' tox
     ```

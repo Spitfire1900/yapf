@@ -84,13 +84,26 @@ parser error rather than retaining an alternate parser or silently reordering
 the header. The test suite records the restriction explicitly; the successful
 differential corpus is not a claim of universal input parity.
 
-The runtime minimum is Python 3.9. LibCST includes a native extension: ensure
+The runtime minimum is Python 3.11. LibCST includes a native extension: ensure
 wheels exist in the package mirror for each interpreter/platform, or arrange
-a Rust source-build toolchain. Python 3.9 through 3.14 and the existing OS
+a Rust source-build toolchain. Python 3.11 through 3.15 and the existing OS
 matrix are configured for CI; actual executed environments belong in the
 validation report, not an implied support claim.
 
 ## Dependency contract and source preservation
+
+The latest stable LibCST release verified on 2026-10-09 is **1.9.0**, which
+already supports Python 3.11. Raising YAPF's minimum runtime does not select
+a newer parser or resolve the documented LibCST syntax restrictions. Both
+this branch and the dependent syntax branch use the same release. See the
+[PyPI release metadata](https://pypi.org/project/libcst/) and
+[upstream releases](https://github.com/Instagram/LibCST/releases).
+
+YAPF now uses standard-library `tomllib` directly and no longer depends on
+`tomli`. Installation metadata, CI, tox and local interpreter selections
+exclude Python 3.9 and 3.10. The runtime minimum is separate from the source
+syntax accepted by the formatter; it does not gate LibCST parsing to Python
+3.11 syntax or add the dependent branch's PEP formatting implementations.
 
 LibCST is constrained to `>=1.9.0,<1.10`. The emission adapter deliberately uses
 one private interface, `libcst._nodes.internal.CodegenState`, and module code
