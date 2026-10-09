@@ -291,6 +291,10 @@ class LayoutUnwrapper(visitor.LayoutVisitor):
     _DetermineMustSplitAnnotation(node)
     self.DefaultNodeVisit(node)
 
+  def Visit_type_param_list(self, node):  # pylint: disable=invalid-name
+    _DetermineMustSplitAnnotation(node)
+    self.DefaultNodeVisit(node)
+
   def Visit_subscriptlist(self, node):  # pylint: disable=invalid-name
     _DetermineMustSplitAnnotation(node)
     self.DefaultNodeVisit(node)
@@ -353,8 +357,13 @@ def _IdentifyParameterLists(line):
   for tok in line.tokens:
     # Identify parameter list objects.
     if subtypes.FUNC_DEF in tok.subtypes:
-      assert tok.next_token.value == '('
-      func_stack.append(tok.next_token)
+      opening = tok.next_token
+      if opening.value == '[':
+        # A generic declaration has its own bracketed list before the value
+        # parameters. Bounds/defaults inside it are not function parameters.
+        opening = opening.matching_bracket.next_token
+      assert opening.value == '('
+      func_stack.append(opening)
       continue
 
     if func_stack and tok.value == ')':

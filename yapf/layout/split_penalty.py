@@ -82,9 +82,11 @@ class _SplitPenaltyAssigner(visitor.LayoutVisitor):
     #
     # NAME
     _SetUnbreakable(node.children[1])
-    if len(node.children) > 4:
-      # opening '('
-      _SetUnbreakable(node.children[2])
+    for child in node.children[2:]:
+      if child.type == layout_token.LPAR:
+        # The bases can follow a type-parameter list, not just the name.
+        _SetUnbreakable(child)
+        break
     # ':'
     _SetUnbreakable(node.children[-2])
     self.DefaultNodeVisit(node)
@@ -135,6 +137,27 @@ class _SplitPenaltyAssigner(visitor.LayoutVisitor):
     if not (style.Get('INDENT_CLOSING_BRACKETS') or
             style.Get('DEDENT_CLOSING_BRACKETS')):
       _SetStronglyConnected(node.children[-1])
+
+  def Visit_type_parameters(self, node):  # pylint: disable=invalid-name
+    self.DefaultNodeVisit(node)
+    _SetUnbreakable(node.children[0])
+    if not (style.Get('INDENT_CLOSING_BRACKETS') or
+            style.Get('DEDENT_CLOSING_BRACKETS')):
+      _SetStronglyConnected(node.children[-1])
+
+  def Visit_type_param(self, node):  # pylint: disable=invalid-name
+    self.DefaultNodeVisit(node)
+    for index, child in enumerate(node.children):
+      if child.type in (layout_token.STAR, layout_token.DOUBLESTAR):
+        # A variadic prefix belongs to its name (or unpacked default). In
+        # particular, do not apply binary-power line-breaking rules to **P.
+        if index + 1 < len(node.children):
+          _SetUnbreakable(utils.FirstLeafNode(node.children[index + 1]))
+      elif child.type in (layout_token.COLON, layout_token.EQUAL):
+        _SetSplitPenalty(child, NAMED_ASSIGN)
+        if index + 1 < len(node.children):
+          _SetSplitPenalty(
+              utils.FirstLeafNode(node.children[index + 1]), NAMED_ASSIGN)
 
   def Visit_arglist(self, node):  # pylint: disable=invalid-name
     if node.children[0].type == layout_token.STAR:

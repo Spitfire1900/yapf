@@ -358,18 +358,33 @@ optional arguments:
   --binary BINARY       location of binary to use for YAPF
 ```
 
-## Python features not yet supported
-This migration ports the formatting behavior of the original `main`; it does
-not integrate the separate Python-syntax feature branches. In particular,
-type aliases and generic declarations are not yet lowered for formatting,
-even though LibCST recognizes their syntax. Unsupported CST constructs produce
-an explicit error rather than falling back to another parser. LibCST 1.9.0
-also rejects a valid starred class base placed after a keyword argument; see
-the [known compatibility restriction](LIBCST_MIGRATION.md#compatibility).
+## Python syntax support
 
-String literals, including f-strings recognized by LibCST, remain opaque to the
-layout engine: their contents are preserved, not reformatted. Do not infer full
-formatting support for a new Python feature solely from LibCST parsing it.
+The LibCST-backed layout adapter supports the following language extensions:
+
+| PEP | Python | Formatting support |
+| --- | --- | --- |
+| 695 | 3.12 | Type aliases, generic functions/classes, bounds and variadics. |
+| 701 | 3.12 | Expanded f-string syntax, with literal interiors preserved. |
+| 696 | 3.13 | Type-parameter defaults, including `*Ts` and `**P`. |
+| 750 | 3.14 | Template strings and `rt` prefixes, with literal interiors preserved. |
+| 758 | 3.14 | Unparenthesized exception lists and `except*` spacing. |
+| 798 | 3.15 | Unpacking comprehensions and generator expressions. |
+| 810 | 3.15 | Explicit lazy imports, including aliases and relative imports. |
+
+**This is not complete Python 3.15 syntax coverage.** LibCST 1.9.0 still rejects
+`tr` template prefixes, adjacent t-strings, a singleton unparenthesized
+exception list with a trailing comma, certain unparenthesized conditional
+unpacking expressions, and a starred class base after a keyword argument.
+See [syntax support and dependency limitations](LIBCST_SYNTAX.md) for exact
+examples, supported alternatives, testing requirements, and scope.
+
+F-string and t-string interiors are kept verbatim, including debug text,
+interpolation whitespace, comments and format specifications. Formatting inside
+a replacement expression is not implemented. Selecting an interior physical
+line of a multiline literal selects its containing logical statement, not
+unselected neighboring statements. This also applies to `yapf-diff` with a
+zero-context input diff. The whole file must still be parseable.
 
 ## Knobs
 

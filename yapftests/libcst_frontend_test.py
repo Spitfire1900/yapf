@@ -152,9 +152,10 @@ class LibCSTFrontendTest(yapf_test_helper.YAPFTest):
     self.assertEqual(before, module.code)
 
   def testUnsupportedSyntaxKeepsFilename(self):
-    with self.assertRaisesRegex(errors.YapfError,
-                                r'example.py:1:1:.*TypeAlias'):
-      yapf_api.FormatCode('type Alias = int\n', filename='example.py')
+    with mock.patch.object(frontend._Lowering, 'lower_TypeAlias', None):
+      with self.assertRaisesRegex(errors.YapfError,
+                                  r'example.py:1:1:.*TypeAlias'):
+        yapf_api.FormatCode('type Alias = int\n', filename='example.py')
 
   def testLossyParserReportsLocatedError(self):
     lossy = cst.parse_module('x=2\n')
@@ -212,14 +213,17 @@ class LibCSTFrontendTest(yapf_test_helper.YAPFTest):
         with self.assertRaises(errors.YapfError):
           yapf_api.FormatCode(source)
 
-  def testUnsupportedNewNodeFailsClearly(self):
-    # This branch ports main; it does not merge the type-parameter feature.
-    with self.assertRaisesRegex(errors.YapfError, 'TypeAlias'):
-      yapf_api.FormatCode('type Alias = int\n')
+  def testTypeAliasLayout(self):
+    source = 'type Alias[T]=list[T]\n'
+    result, _ = yapf_api.FormatCode(source)
+    self.assertEqual('type Alias[T] = list[T]\n', result)
+    self.assertEqual(result, yapf_api.FormatCode(result)[0])
 
-  def testGenericDeclarationIsOutsideMigrationScope(self):
-    with self.assertRaisesRegex(errors.YapfError, 'Type parameters'):
-      yapf_api.FormatCode('def f[T](x:T): return x\n')
+  def testGenericDeclarationLayout(self):
+    source = 'def f[T](x:T): return x\n'
+    result, _ = yapf_api.FormatCode(source, style_config='pep8')
+    self.assertEqual('def f[T](x: T):\n    return x\n', result)
+    self.assertEqual(result, yapf_api.FormatCode(result)[0])
 
   def testSelectedLines(self):
     source = 'a= 1\nb= 2\nc= 3\n'

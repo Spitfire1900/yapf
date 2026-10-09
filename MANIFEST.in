@@ -1,4 +1,4 @@
-include HACKING.md LICENSE AUTHORS CHANGELOG.md CONTRIBUTING.md CONTRIBUTORS LIBCST_MIGRATION.md
+include HACKING.md LICENSE AUTHORS CHANGELOG.md CONTRIBUTING.md CONTRIBUTORS LIBCST_MIGRATION.md LIBCST_SYNTAX.md
 include .coveragerc .editorconfig .flake8 plugins/README.md
 include plugins/vim/autoload/yapf.vim plugins/vim/plugin/yapf.vim pylintrc
 include .style.yapf tox.ini .vimrc

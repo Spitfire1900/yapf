@@ -263,7 +263,7 @@ def _MarkLinesToFormat(llines, lines):
   if lines:
     for uwline in llines:
       uwline.disable = not lines.intersection(
-          range(uwline.lineno, uwline.last.lineno + 1))
+          range(uwline.lineno, uwline.end[0] + 1))
 
   # Now go through the lines and disable any lines explicitly marked as
   # disabled.

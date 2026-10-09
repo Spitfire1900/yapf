@@ -53,6 +53,15 @@ class _IdentifyContainers(visitor.LayoutVisitor):
       utils.SetOpeningBracket(
           utils.FirstLeafNode(node.children[1]), node.children[0])
 
+  def Visit_type_parameters(self, node):  # pylint: disable=invalid-name
+    self.DefaultNodeVisit(node)
+    opening = node.children[0]
+    for child in node.children:
+      if utils.NodeName(child) == 'type_param_list':
+        for param in child.children:
+          if utils.NodeName(param) == 'type_param':
+            utils.SetOpeningBracket(utils.FirstLeafNode(param), opening)
+
   def Visit_atom(self, node):  # pylint: disable=invalid-name
     for child in node.children:
       self.Visit(child)

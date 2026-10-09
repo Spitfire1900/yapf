@@ -2,17 +2,19 @@
 
 ## Scope
 
-This branch starts at `main` commit
-`12005095296072751e3e4c1f33a047d41b0ce18d`. It ports the existing formatter;
-none of the separate PEP implementation or parser-fix branches is merged.
-The original main and all pre-existing branch tips remain unchanged.
+The original migration commit `6aaf2c4272e14402929ac4de07e31a11692d1186`
+starts at `main` commit `12005095296072751e3e4c1f33a047d41b0ce18d`.
+It ports the existing formatter without merging the separate PEP or parser-fix
+branches. The original main and all pre-existing branch tips remain unchanged.
 
-The formatter retains its layout search and style options. This is not a
-rewrite of the style engine or a promise that every syntax construct accepted
-by the dependency has a YAPF formatting rule. Type aliases and generic
-declarations, for example, are rejected explicitly by the layout adapter.
-String interiors stay verbatim. Incidental additional syntax acceptance by
-the upstream parser is not a separately implemented language feature.
+The follow-up branch `feature/libcst-python-syntax-20261009` builds directly on
+that migration and adds layout support for PEPs 695, 696, 701, 750, 758, 798 and
+810. Those implementations use LibCST nodes, not the old parser patches.
+See [LIBCST_SYNTAX.md](LIBCST_SYNTAX.md) for the feature matrix and remaining
+upstream restrictions. Literal interiors still remain verbatim.
+
+The formatter retains its existing layout search and style options. A parser
+accepting a construct does not by itself establish correct formatter support.
 
 ## Pipeline and ownership
 
@@ -86,7 +88,7 @@ differential corpus is not a claim of universal input parity.
 
 The runtime minimum is Python 3.9. LibCST includes a native extension: ensure
 wheels exist in the package mirror for each interpreter/platform, or arrange
-a Rust source-build toolchain. Python 3.9 through 3.14 and the existing OS
+a Rust source-build toolchain. Python 3.9 through 3.15 and the existing OS
 matrix are configured for CI; actual executed environments belong in the
 validation report, not an implied support claim.
 

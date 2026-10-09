@@ -109,6 +109,27 @@ class _SubtypeAssigner(visitor.LayoutVisitor):
       if isinstance(child, layout_tree.Leaf) and child.value == '=':
         _AppendTokenSubtype(child, subtypes.ASSIGN_OPERATOR)
 
+  Visit_type_alias = Visit_expr_stmt
+
+  def Visit_type_param(self, node):  # pylint: disable=invalid-name
+    for child in node.children:
+      self.Visit(child)
+      if isinstance(child, layout_tree.Leaf):
+        subtype = {
+            ':': subtypes.TYPED_NAME,
+            '=': subtypes.ASSIGN_OPERATOR,
+            '*': subtypes.VARARGS_STAR,
+            '**': subtypes.KWARGS_STAR_STAR,
+        }.get(child.value)
+        if subtype is not None:
+          _AppendTokenSubtype(child, subtype)
+
+  def Visit_except_clause(self, node):  # pylint: disable=invalid-name
+    for child in node.children:
+      self.Visit(child)
+      if child.type == layout_token.STAR:
+        _AppendTokenSubtype(child, subtypes.EXCEPT_STAR)
+
   def Visit_or_test(self, node):  # pylint: disable=invalid-name
     for child in node.children:
       self.Visit(child)

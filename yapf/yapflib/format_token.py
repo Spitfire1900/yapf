@@ -297,14 +297,9 @@ class FormatToken(object):
 
   @property
   def is_multiline_string(self):
-    """Test if this string is a multiline string.
-
-    Returns:
-      A multiline string always ends with triple quotes, so if it is a string
-      token, inspect the last 3 characters and return True if it is a triple
-      double or triple single quote mark.
-    """
-    return self.is_string and self.value.endswith(('"""', "'''"))
+    """Whether the literal uses triple quotes or spans physical lines."""
+    return self.is_string and ('\n' in self.value or self.value.endswith(
+        ('"""', "'''")))
 
   @property
   def is_docstring(self):

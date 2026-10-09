@@ -224,6 +224,14 @@ def ParseModule(code):
     raise SyntaxError(
         str(exc),
         ('<unknown>', 1, 1, next(iter(code.splitlines()), ''))) from exc
+  except cst.CSTLogicError as exc:
+    # Some valid newer constructs (e.g. adjacent t-strings in LibCST 1.9.0)
+    # reach a missing node-validation case rather than a parser diagnostic.
+    # Report the dependency limitation through the same public error boundary;
+    # do not mislabel it invalid Python or silently rewrite the user's source.
+    raise SyntaxError(
+        'LibCST could not represent this source: ' + str(exc),
+        ('<unknown>', 1, 1, next(iter(code.splitlines()), ''))) from exc
 
 
 def ParseCode(code):
@@ -369,6 +377,32 @@ class _Lowering:
                           [self.lower(t.target) for t in node.targets] +
                           [self.lower(node.value)])
 
+  def lower_TypeAlias(self, node):
+    return self.statement('type_alias', node, [
+        self.lower(node.name),
+        self.lower(node.type_parameters),
+        self.lower(node.value)
+    ])
+
+  def lower_TypeParameters(self, node):
+    # Declaration brackets are not subscripts: their colons introduce bounds
+    # and their equals signs introduce defaults, rather than slices/keywords.
+    params = self.group('type_param_list',
+                        self.span(node.lbracket)[1],
+                        self.span(node.rbracket)[0],
+                        [self.lower(param) for param in node.params], True)
+    return self.combine('type_parameters', node, [params], True)
+
+  def lower_TypeParam(self, node):
+    start, end = self.span(node)
+    if isinstance(node.comma, cst.Comma):
+      end = self.span(node.comma)[0]
+    parts = [self.lower(node.param.name)]
+    if isinstance(node.param, cst.TypeVar) and node.param.bound is not None:
+      parts.append(self.lower(node.param.bound))
+    parts.append(self.lower(node.default))
+    return self.group('type_param', start, end, parts, True)
+
   def lower_AnnAssign(self, node):
     ann = self.group(
         'annassign',
@@ -440,6 +474,11 @@ class _Lowering:
           self.group('import_as_names', aliases[0]._start, end, aliases))
     return self.statement('import_from', node, parts)
 
+  # LibCST gives lazy imports the same fields as eager imports plus the
+  # contextual keyword. Keep the existing import formatting contexts.
+  lower_LazyImport = lower_Import
+  lower_LazyImportFrom = lower_ImportFrom
+
   def lower_If(self, node):
     parts = [self.lower(node.test), self.lower(node.body)]
     if node.orelse:
@@ -502,7 +541,7 @@ class _Lowering:
       colon = self.span(handler.body)[0] - 1
       parts.append(
           self.group('except_clause', s, colon, [
-              self.lower(handler.type),
+              self.lower(handler.type, 'except_types'),
               self.lower(handler.name.name) if handler.name else None
           ]))
       parts.append(self.lower(handler.body))
@@ -538,15 +577,13 @@ class _Lowering:
     return self.combine(kind, node, parts)
 
   def lower_FunctionDef(self, node):
-    if node.type_parameters is not None:
-      raise UnsupportedSyntaxError(
-          'Type parameters are outside this main-branch migration')
     params = self.parameters(node.params)
-    left = self.span(node.name)[1]
+    left = self.span(node.type_parameters or node.name)[1]
     right = self.span(node.params)[1] + 1
     parameters = self.group('parameters', left, right, [params], True)
     parts = [
-        self.lower(node.name), parameters,
+        self.lower(node.name),
+        self.lower(node.type_parameters), parameters,
         self.lower(node.returns.annotation) if node.returns else None,
         self.lower(node.body)
     ]
@@ -564,11 +601,12 @@ class _Lowering:
     return result
 
   def lower_ClassDef(self, node):
-    if node.type_parameters is not None:
-      raise UnsupportedSyntaxError(
-          'Type parameters are outside this main-branch migration')
     args = [self.argument(a) for a in tuple(node.bases) + tuple(node.keywords)]
-    parts = [self.lower(node.name), self.lower(node.body)]
+    parts = [
+        self.lower(node.name),
+        self.lower(node.type_parameters),
+        self.lower(node.body)
+    ]
     if args:
       parts.append(
           self.group(
@@ -743,6 +781,9 @@ class _Lowering:
       return self.group('star_expr', s, e, [self.lower(node.value)])
     return self.lower(node.value)
 
+  def lower_StarredElement(self, node):
+    return self.element(node)
+
   def lower_Set(self, node):
     return self.container(node, 'dictsetmaker',
                           [self.element(e) for e in node.elements])
@@ -784,6 +825,11 @@ class _Lowering:
         self.lower(node.value),
         self.comp_for(node.for_in)
     ])
+
+  def lower_StarredDictComp(self, node):
+    return self.container(node, 'dictsetmaker',
+                          [self.lower(node.value),
+                           self.comp_for(node.for_in)])
 
   def lower_GeneratorExp(self, node):
     return self.combine(

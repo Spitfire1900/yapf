@@ -215,11 +215,20 @@ class LogicalLine(object):
     Returns:
       A tuple of the ending line number and column.
     """
-    return (self.last.lineno, self.last.column + len(self.last.value))
+    last = self.last
+    if last.is_string and '\n' in last.value:
+      return (last.lineno + last.value.count('\n'),
+              len(last.value.rsplit('\n', 1)[-1]))
+    return (last.lineno, last.column + len(last.value))
 
   @property
   def is_comment(self):
     return self.first.is_comment
+
+  @property
+  def is_import(self):
+    return utils.NodeName(
+        self.first.node.parent) in {'import_name', 'import_from'}
 
   @property
   def has_semicolon(self):
@@ -295,9 +304,13 @@ def _SpaceRequiredBetween(left, right, is_line_disabled):
   if _IsIdNumberStringToken(left) and _IsIdNumberStringToken(right):
     # Spaces between keyword, string, number, and identifier tokens.
     return True
-  if lval == ',' and rval == ':':
-    # We do want a space between a comma and colon.
+  if subtypes.EXCEPT_STAR in right.subtypes:
+    return False
+  if subtypes.EXCEPT_STAR in left.subtypes:
     return True
+  if lval == ',' and rval == ':':
+    # Slices require a space, but a trailing exception-list comma does not.
+    return utils.NodeName(left.node.parent) != 'except_types'
   if style.Get('SPACE_INSIDE_BRACKETS'):
     # Supersede the "no space before a colon or comma" check.
     if left.OpensScope() and rval == ':':
