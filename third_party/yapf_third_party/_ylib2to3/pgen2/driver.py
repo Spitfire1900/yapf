@@ -14,6 +14,7 @@ __author__ = 'Guido van Rossum <guido@python.org>'
 
 __all__ = ['Driver', 'load_grammar']
 
+import hashlib
 import io
 import logging
 import os
@@ -187,8 +188,8 @@ class Driver(object):
     return self.parse_tokens(tokens, debug)
 
 
-def _generate_pickle_name(gt):
-  # type:(str) -> str
+def _generate_pickle_name(gt, source=None):
+  # type:(str, bytes | None) -> str
   """Get the filepath to write a pickle file to
   given the path of a grammar textfile.
 
@@ -196,6 +197,7 @@ def _generate_pickle_name(gt):
 
   Args:
       gt (str): path to grammar text file
+      source (bytes): optional source snapshot used to isolate cache entries
 
   Returns:
       str: path to pickle file
@@ -205,6 +207,8 @@ def _generate_pickle_name(gt):
   head, tail = os.path.splitext(grammar_textfile_name)
   if tail == '.txt':
     tail = ''
+  if source is not None:
+    head += '-' + hashlib.sha256(source).hexdigest()
   cache_dir = user_cache_dir(
       appname='YAPF', appauthor='Google', version=yapf_version)
   return cache_dir + os.sep + head + tail + '-py' + '.'.join(
@@ -220,20 +224,24 @@ def load_grammar(gt='Grammar.txt',
   """Load the grammar (maybe from a pickle)."""
   if logger is None:
     logger = logging.getLogger()
-  gp = _generate_pickle_name(gt) if gp is None else gp
-  grammar_text = gt
+  # Different checkouts can have the same package/interpreter version and
+  # file timestamps, but different grammars. Key the cache by the source,
+  # and parse the same snapshot so no checkout can reuse another's grammar.
+  try:
+    with open(gt, 'rb') as source_file:
+      source = source_file.read()
+  except FileNotFoundError:
+    gt_basename = os.path.basename(gt)
+    source = pkgutil.get_data('yapf_third_party._ylib2to3', gt_basename)
+    if source is None:
+      raise RuntimeError('Failed to load grammar %s from package' % gt_basename)
+  gp = _generate_pickle_name(gt, source) if gp is None else gp
+  grammar_text = io.StringIO(source.decode(encoding='utf-8'))
   try:
     newer = _newer(gp, gt)
   except OSError as err:
     logger.debug('OSError, could not check if newer: %s', err.args)
     newer = True
-  if not os.path.exists(gt):
-    # Assume package data
-    gt_basename = os.path.basename(gt)
-    pd = pkgutil.get_data('yapf_third_party._ylib2to3', gt_basename)
-    if pd is None:
-      raise RuntimeError('Failed to load grammer %s from package' % gt_basename)
-    grammar_text = io.StringIO(pd.decode(encoding='utf-8'))
   if force or not newer:
     g = pgen.generate_grammar(grammar_text)
     if save:
