@@ -23,12 +23,11 @@ import sys
 # Python imports
 from contextlib import contextmanager
 from dataclasses import dataclass
-from dataclasses import field
 from pathlib import Path
 from typing import Any
+from typing import Dict
 from typing import Iterator
 from typing import List
-from typing import Optional
 
 from platformdirs import user_cache_dir
 
@@ -43,72 +42,72 @@ from . import tokenize
 
 
 @dataclass
-class ReleaseRange:
-  start: int
-  end: Optional[int] = None
-  tokens: List[Any] = field(default_factory=list)
+class _Lookahead:
+  """An independent cursor for one speculative parser invocation."""
 
-  def lock(self) -> None:
-    total_eaten = len(self.tokens)
-    self.end = self.start + total_eaten
+  start: int
+  next_position: int
 
 
 class TokenProxy:
+  """Buffer unread tokens once, independently of speculative parser cursors.
+
+  A release scope observes tokens without consuming the main iterator. Nested
+  scopes start after the token most recently observed by their parent, and
+  returning from a nested scope restores the parent's cursor. All scopes share
+  the same indexed buffer, so competing parser routes see identical tokens.
+  Committed tokens are discarded immediately rather than retaining and scanning
+  one release record for every soft keyword in the input.
+  """
 
   def __init__(self, generator: Any) -> None:
-    self._tokens = generator
-    self._counter = 0
-    self._release_ranges: List[ReleaseRange] = []
+    self._tokens = iter(generator)
+    self._position = 0
+    self._read_position = 0
+    self._buffer: Dict[int, Any] = {}
+    self._lookahead: List[_Lookahead] = []
+
+  def _get(self, position: int) -> Any:
+    while self._read_position <= position:
+      self._buffer[self._read_position] = next(self._tokens)
+      self._read_position += 1
+    return self._buffer[position]
 
   @contextmanager
   def release(self) -> Iterator['TokenProxy']:
-    release_range = ReleaseRange(self._counter)
-    self._release_ranges.append(release_range)
+    start = (
+        self._lookahead[-1].next_position
+        if self._lookahead else self._position)
+    self._lookahead.append(_Lookahead(start, start))
     try:
       yield self
     finally:
-      # Lock the last release range to the final position that
-      # has been eaten.
-      release_range.lock()
+      self._lookahead.pop()
 
   def eat(self, point: int) -> Any:
-    eaten_tokens = self._release_ranges[-1].tokens
-    if point < len(eaten_tokens):
-      return eaten_tokens[point]
-    else:
-      while point >= len(eaten_tokens):
-        token = next(self._tokens)
-        eaten_tokens.append(token)
-      return token
+    if point < 0:
+      raise IndexError('lookahead offset must be nonnegative')
+    scope = self._lookahead[-1]
+    position = scope.start + point
+    value = self._get(position)
+    scope.next_position = position + 1
+    return value
 
   def __iter__(self) -> 'TokenProxy':
     return self
 
   def __next__(self) -> Any:
-    # If the current position is already compromised (looked up)
-    # return the eaten token, if not just go further on the given
-    # token producer.
-    for release_range in self._release_ranges:
-      assert release_range.end is not None
-
-      start, end = release_range.start, release_range.end
-      if start <= self._counter < end:
-        token = release_range.tokens[self._counter - start]
-        break
-    else:
-      token = next(self._tokens)
-    self._counter += 1
-    return token
+    value = self._get(self._position)
+    del self._buffer[self._position]
+    self._position += 1
+    return value
 
   def can_advance(self, to: int) -> bool:
-    # Try to eat, fail if it can't. The eat operation is cached
-    # so there wont be any additional cost of eating here
     try:
       self.eat(to)
     except StopIteration:
       return False
-    else:
-      return True
+    return True
 
 
 class Driver(object):
