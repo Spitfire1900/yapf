@@ -107,6 +107,15 @@ class _SubtypeAssigner(pytree_visitor.PyTreeVisitor):
         elif last_was_colon:
           unpacking = False
 
+  def Visit_type_stmt(self, node):  # pylint: disable=invalid-name
+    # An alias assignment is not a default/named argument assignment.
+    self.Visit_expr_stmt(node)
+
+  def Visit_typeparam(self, node):  # pylint: disable=invalid-name
+    # Reuse annotation and variadic spacing without marking these as function
+    # value parameters (PARAMETER_START/PARAMETER_STOP).
+    self._ProcessArgLists(node)
+
   def Visit_expr_stmt(self, node):  # pylint: disable=invalid-name
     # expr_stmt ::= testlist_star_expr (augassign (yield_expr|testlist)
     #               | ('=' (yield_expr|testlist_star_expr))*)

@@ -16,7 +16,7 @@ decorator: '@' namedexpr_test NEWLINE
 decorators: decorator+
 decorated: decorators (classdef | funcdef | async_funcdef)
 async_funcdef: ASYNC funcdef
-funcdef: 'def' NAME parameters ['->' test] ':' suite
+funcdef: 'def' NAME [typeparams] parameters ['->' test] ':' suite
 parameters: '(' [typedargslist] ')'
 
 # The following definition for typedarglist is equivalent to this set of rules:
@@ -75,7 +75,7 @@ vfplist: vfpdef (',' vfpdef)* [',']
 stmt: simple_stmt | compound_stmt
 simple_stmt: small_stmt (';' small_stmt)* [';'] NEWLINE
 small_stmt: (expr_stmt | print_stmt  | del_stmt | pass_stmt | flow_stmt |
-             import_stmt | global_stmt | exec_stmt | assert_stmt)
+             import_stmt | global_stmt | exec_stmt | assert_stmt | type_stmt)
 expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
                      ('=' (yield_expr|testlist_star_expr))*)
 annassign: ':' test ['=' (yield_expr|testlist_star_expr)]
@@ -174,7 +174,12 @@ dictsetmaker: ( ((test ':' asexpr_test | '**' expr)
                 ((test [':=' test] | star_expr)
 		 (comp_for | (',' (test [':=' test] | star_expr))* [','])) )
 
-classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
+type_stmt: "type" NAME [typeparams] '=' test
+typeparams: '[' typeparamslist ']'
+typeparamslist: typeparam (',' typeparam)* [',']
+typeparam: NAME [':' test] | '*' NAME | '**' NAME
+
+classdef: 'class' NAME [typeparams] ['(' [arglist] ')'] ':' suite
 
 arglist: argument (',' argument)* [',']
 

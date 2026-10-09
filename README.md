@@ -351,9 +351,10 @@ optional arguments:
   --binary BINARY       location of binary to use for YAPF
 ```
 
-## Python features not yet supported
-* Python 3.12 – [PEP 695 – Type Parameter Syntax](https://peps.python.org/pep-0695/) – [YAPF #1170](https://github.com/google/yapf/issues/1170)
-* Python 3.12 – [PEP 701 – Syntactic formalization of f-strings](https://peps.python.org/pep-0701/) – [YAPF #1136](https://github.com/google/yapf/issues/1136)
+## Python syntax support
+
+* Python 3.12 - [PEP 695 - Type parameter syntax](https://peps.python.org/pep-0695/) - **Supported.** See [implementation notes](docs/pep-0695.md).
+* Python 3.12 - [PEP 701 - F-string syntax](https://peps.python.org/pep-0701/) - **Not yet supported in this branch.**
 
 ## Knobs
 
