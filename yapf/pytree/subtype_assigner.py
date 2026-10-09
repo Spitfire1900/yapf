@@ -148,6 +148,9 @@ class _SubtypeAssigner(pytree_visitor.PyTreeVisitor):
         for grandchild in child.children:
           _AppendTokenSubtype(grandchild, subtypes.BINARY_OPERATOR)
 
+  def Visit_star_gexp(self, node):  # pylint: disable=invalid-name
+    self.Visit_star_expr(node)
+
   def Visit_star_expr(self, node):  # pylint: disable=invalid-name
     # star_expr ::= '*' expr
     for child in node.children:

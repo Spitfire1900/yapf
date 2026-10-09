@@ -161,7 +161,9 @@ atom: ('(' [yield_expr|testlist_gexp] ')' |
        '`' testlist1 '`' |
        NAME | NUMBER | STRING+ | '.' '.' '.')
 listmaker: (namedexpr_test|star_expr) ( old_comp_for | (',' (namedexpr_test|star_expr))* [','] )
-testlist_gexp: (namedexpr_test|star_expr) ( old_comp_for | (',' (namedexpr_test|star_expr))* [','] )
+# PEP 798 permits full expressions in an unpacking generator head.
+star_gexp: '*' test
+testlist_gexp: (namedexpr_test|star_gexp) ( old_comp_for | (',' (namedexpr_test|star_expr))* [','] )
 lambdef: 'lambda' [varargslist] ':' test
 trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
 subscriptlist: (subscript|star_expr) (',' (subscript|star_expr))* [',']
@@ -169,7 +171,7 @@ subscript: test [':=' test] | [test] ':' [test] [sliceop]
 sliceop: ':' [test]
 exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
 testlist: test (',' test)* [',']
-dictsetmaker: ( ((test ':' asexpr_test | '**' expr)
+dictsetmaker: ( ((test ':' asexpr_test | '**' test)
                  (comp_for | (',' (test ':' asexpr_test | '**' expr))* [','])) |
                 ((test [':=' test] | star_expr)
 		 (comp_for | (',' (test [':=' test] | star_expr))* [','])) )
@@ -190,7 +192,7 @@ argument: ( test [comp_for] |
             test 'as' test |
             test '=' asexpr_test |
 	    '**' test |
-            '*' test )
+            '*' test [comp_for] )
 
 comp_iter: comp_for | comp_if
 comp_for: [ASYNC] 'for' exprlist 'in' or_test [comp_iter]
