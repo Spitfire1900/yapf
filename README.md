@@ -53,7 +53,7 @@ YAPF is supported by multiple editors via community extensions or plugins. See [
 
 ## Required Python versions
 
-This branch requires Python 3.9+ and LibCST 1.9.x. LibCST is installed with
+This branch requires Python 3.11+ and LibCST 1.9.x. LibCST is installed with
 YAPF; running directly from a checkout still requires its dependencies.
 LibCST normally installs from a platform wheel. A source build requires Rust.
 

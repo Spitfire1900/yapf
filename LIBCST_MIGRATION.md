@@ -2,19 +2,17 @@
 
 ## Scope
 
-The original migration commit `6aaf2c4272e14402929ac4de07e31a11692d1186`
-starts at `main` commit `12005095296072751e3e4c1f33a047d41b0ce18d`.
-It ports the existing formatter without merging the separate PEP or parser-fix
-branches. The original main and all pre-existing branch tips remain unchanged.
+This branch starts at `main` commit
+`12005095296072751e3e4c1f33a047d41b0ce18d`. It ports the existing formatter;
+none of the separate PEP implementation or parser-fix branches is merged.
+The original main and all pre-existing branch tips remain unchanged.
 
-The follow-up branch `feature/libcst-python-syntax-20261009` builds directly on
-that migration and adds layout support for PEPs 695, 696, 701, 750, 758, 798 and
-810. Those implementations use LibCST nodes, not the old parser patches.
-See [LIBCST_SYNTAX.md](LIBCST_SYNTAX.md) for the feature matrix and remaining
-upstream restrictions. Literal interiors still remain verbatim.
-
-The formatter retains its existing layout search and style options. A parser
-accepting a construct does not by itself establish correct formatter support.
+The formatter retains its layout search and style options. This is not a
+rewrite of the style engine or a promise that every syntax construct accepted
+by the dependency has a YAPF formatting rule. Type aliases and generic
+declarations, for example, are rejected explicitly by the layout adapter.
+String interiors stay verbatim. Incidental additional syntax acceptance by
+the upstream parser is not a separately implemented language feature.
 
 ## Pipeline and ownership
 
@@ -86,13 +84,26 @@ parser error rather than retaining an alternate parser or silently reordering
 the header. The test suite records the restriction explicitly; the successful
 differential corpus is not a claim of universal input parity.
 
-The runtime minimum is Python 3.9. LibCST includes a native extension: ensure
+The runtime minimum is Python 3.11. LibCST includes a native extension: ensure
 wheels exist in the package mirror for each interpreter/platform, or arrange
-a Rust source-build toolchain. Python 3.9 through 3.15 and the existing OS
+a Rust source-build toolchain. Python 3.11 through 3.15 and the existing OS
 matrix are configured for CI; actual executed environments belong in the
 validation report, not an implied support claim.
 
 ## Dependency contract and source preservation
+
+The latest stable LibCST release verified on 2026-10-09 is **1.9.0**, which
+already supports Python 3.11. Raising YAPF's minimum runtime does not select
+a newer parser or resolve the documented LibCST syntax restrictions. Both
+this branch and the dependent syntax branch use the same release. See the
+[PyPI release metadata](https://pypi.org/project/libcst/) and
+[upstream releases](https://github.com/Instagram/LibCST/releases).
+
+YAPF now uses standard-library `tomllib` directly and no longer depends on
+`tomli`. Installation metadata, CI, tox and local interpreter selections
+exclude Python 3.9 and 3.10. The runtime minimum is separate from the source
+syntax accepted by the formatter; it does not gate LibCST parsing to Python
+3.11 syntax or add the dependent branch's PEP formatting implementations.
 
 LibCST is constrained to `>=1.9.0,<1.10`. The emission adapter deliberately uses
 one private interface, `libcst._nodes.internal.CodegenState`, and module code

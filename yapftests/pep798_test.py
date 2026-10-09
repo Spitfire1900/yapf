@@ -144,9 +144,8 @@ class Pep798Test(unittest.TestCase):
     for source in sources:
       with self.subTest(source=source):
         result = self.assertFormatting(source)
-        if sys.version_info >= (3, 11):
-          self.assertEqual(
-              ast.dump(ast.parse(source)), ast.dump(ast.parse(result)))
+        self.assertEqual(
+            ast.dump(ast.parse(source)), ast.dump(ast.parse(result)))
 
   @unittest.skipUnless(sys.version_info >= (3, 15), 'requires Python 3.15')
   def testNativeUnpackingSemantics(self):

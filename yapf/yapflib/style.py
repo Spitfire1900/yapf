@@ -15,16 +15,11 @@
 
 import os
 import re
-import sys
 import textwrap
+import tomllib
 from configparser import ConfigParser
 
 from yapf.yapflib import errors
-
-if sys.version_info >= (3, 11):
-  import tomllib
-else:
-  import tomli as tomllib
 
 
 class StyleConfigError(errors.YapfError):

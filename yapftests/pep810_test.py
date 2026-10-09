@@ -70,9 +70,8 @@ class Pep810Test(unittest.TestCase):
     for source in sources:
       with self.subTest(source=source):
         result = self.assertFormatting(source)
-        if sys.version_info >= (3, 10):
-          self.assertEqual(
-              ast.dump(ast.parse(source)), ast.dump(ast.parse(result)))
+        self.assertEqual(
+            ast.dump(ast.parse(source)), ast.dump(ast.parse(result)))
     leaf = layout_tree.Leaf(token.NAME, 'lazy')
     self.assertFalse(format_token.FormatToken(leaf, 'NAME').is_keyword)
 

@@ -3,7 +3,8 @@
 ## Branch and implementation boundary
 
 `feature/libcst-python-syntax-20261009` starts at the validated LibCST migration
-`6aaf2c4272e14402929ac4de07e31a11692d1186`. It does not merge, cherry-pick, or
+`6aaf2c4272e14402929ac4de07e31a11692d1186` and includes its Python 3.11+
+runtime update. It does not merge, cherry-pick, or
 rewrite the earlier PEP branches. Their regression scenarios are retained as
 behavioral specifications, but implementation is in the new layout front end.
 
@@ -12,6 +13,12 @@ source tokenizers, contextual-keyword lookahead, AST fallback, or runtime
 monkey-patches to LibCST. The existing migration's narrow, source-checked EOF
 comment recovery is retained. The dependency remains `libcst>=1.9.0,<1.10`;
 its private code-generation interface is still isolated in `frontend.py`.
+LibCST 1.9.0 is still the latest stable release verified on 2026-10-09 and
+already supports Python 3.11. The raised runtime floor removes obsolete
+compatibility paths; it does not resolve the upstream parser restrictions
+listed below. No source feature is disabled merely because the formatter
+runs on Python 3.11. Only native CPython syntax/semantics tests retain their
+feature-specific version guards.
 
 ## Supported formatting
 
@@ -99,7 +106,7 @@ python -m pytest -q
 ```
 
 The new PEP tests keep newer syntax in string fixtures so the suite itself
-runs on the formatter's Python 3.9+ runtime. AST comparisons and executable
+runs on the formatter's Python 3.11+ runtime. AST comparisons and executable
 semantics tests run only on interpreters that implement the feature. Native
 checks include type-parameter defaults, f-string debug output, template
 metadata, exception handlers, unpacking semantics and lazy-import AST flags.
@@ -110,7 +117,7 @@ ranges, disabled regions, and real formatter subprocesses invoked by
 `yapf-diff`. Known dependency restrictions have separately named tests; a
 passing restriction test is not successful formatting of that input.
 
-CI/tox include Python 3.9 through 3.15. This is configuration, not evidence
+CI/tox include Python 3.11 through 3.15. This is configuration, not evidence
 that every environment has run. Executed interpreter/platform combinations,
 full source/wheel/archive results, differential comparisons, and independent
 command-line checks belong in the accompanying delivery validation report.
