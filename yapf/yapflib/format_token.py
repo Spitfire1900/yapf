@@ -300,13 +300,13 @@ class FormatToken(object):
 
   @property
   def is_multiline_string(self):
-    """Test if this string is a multiline string.
+    """Recognize triple-quoted strings and strings with physical newlines.
 
-    Returns:
-      A multiline string always ends with triple quotes, so if it is a string
-      token, inspect the last 3 characters and return True if it is a triple
-      double or triple single quote mark.
+    PEP 701 permits newlines inside a single-quoted f-string field.
+    Preserve the existing treatment of one-line triple-quoted strings.
     """
+    if self.is_string and '\n' in self.value:
+      return True
     return self.is_string and self.value.endswith(('"""', "'''"))
 
   @property
