@@ -280,6 +280,10 @@ class FormatToken(object):
   @property
   @lru_cache()
   def is_keyword(self):
+    if (self.value == 'lazy' and self.node.parent is not None and
+        type_repr(self.node.parent.type) == 'lazy_import' and
+        self.node is self.node.parent.children[0]):
+      return True
     return keyword.iskeyword(
         self.value) or (self.value == 'match' and
                         type_repr(self.node.parent.type) == 'match_stmt') or (
