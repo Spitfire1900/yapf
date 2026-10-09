@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Read a complete f-string without changing its source representation.
+"""Read a complete f-string or t-string without changing its source.
 
 PEP 701 permits the enclosing quote, comments and newlines in replacement
 fields. A regular expression for an ordinary string cannot find the end of
 such an f-string. This scanner follows the lexical contexts instead, retaining
 YAPF's representation of an entire string literal as a single STRING token.
-It deliberately does not parse or reformat replacement expressions.
+PEP 750 template strings use the same lexical contexts, including nested
+f-strings and t-strings. Replacement text is preserved because it is
+observable in template Interpolation.expression and debug expressions.
+This scanner deliberately does not parse or reformat those expressions.
 """
 
 import re
@@ -25,8 +28,11 @@ import re
 # Put triple quotes before single quotes, and two-letter prefixes before
 # one-letter prefixes. Identifiers are consumed separately in expressions so
 # that a suffix of an identifier cannot be mistaken for a string prefix.
-STRING_START = re.compile(r'''(?i:(fr|rf|br|rb|r|u|b|f)?)("""|\'\'\'|"|\')''')
+STRING_START = re.compile(
+    r'''(?i:(fr|rf|tr|rt|br|rb|r|u|b|f|t)?)("""|\'\'\'|"|\')''')
 FSTRING_START = r'''(?:[fF][rR]?|[rR][fF])(?:"""|\'\'\'|"|\')'''
+TSTRING_START = FSTRING_START.replace('[fF]', '[tT]')
+INTERPOLATED_STRING_START = '(?:' + FSTRING_START + '|' + TSTRING_START + ')'
 _NAME = re.compile(r'\w+')
 _CLOSING = {'(': ')', '[': ']', '{': '}'}
 
@@ -35,8 +41,8 @@ class FStringError(Exception):
   """A lexical error, with the same arguments as tokenize.TokenError."""
 
 
-def scan_fstring(readline, line, lineno, column):
-  """Return (value, end_position, last_line, physical_lines) for an f-string.
+def scan_interpolated_string(readline, line, lineno, column):
+  """Return (value, end_position, last_line, physical_lines) for a literal.
 
   ``line`` is the physical line already read by the caller. Only subsequent
   physical lines belonging to this literal are read from ``readline``. The
@@ -54,6 +60,10 @@ def scan_fstring(readline, line, lineno, column):
   return value, (scanner.lineno, scanner.column), scanner.line, physical_lines
 
 
+# Retain the PEP 701 entry point for existing scanner clients.
+scan_fstring = scan_interpolated_string
+
+
 class _Scanner:
 
   def __init__(self, readline, line, lineno, column):
@@ -63,8 +73,12 @@ class _Scanner:
     self.column = column
     self.start = (lineno, column)
     self.lines = [line]
+    prefix = STRING_START.match(line, column)
+    self.template = bool(prefix and 't' in (prefix.group(1) or '').lower())
 
   def error(self, message):
+    if self.template:
+      message = message.replace('f-string', 't-string')
     raise FStringError(message, self.start)
 
   def peek(self):
@@ -87,7 +101,7 @@ class _Scanner:
       self.error('expected string literal')
     prefix, quote = match.groups()
     prefix = (prefix or '').lower()
-    formatted = 'f' in prefix
+    formatted = 'f' in prefix or 't' in prefix
     raw = 'r' in prefix
     self.column = match.end()
     while True:

@@ -128,10 +128,11 @@ Token = Ignore + PlainToken
 ContStr = group(
     _litprefix + r"'[^\n'\\]*(?:\\.[^\n'\\]*)*" + group("'", r'\\\r?\n'),
     _litprefix + r'"[^\n"\\]*(?:\\.[^\n"\\]*)*' + group('"', r'\\\r?\n'))
-PseudoExtras = group(r'\\\r?\n', Comment, fstring.FSTRING_START, Triple)
+PseudoExtras = group(r'\\\r?\n', Comment, fstring.INTERPOLATED_STRING_START,
+                     Triple)
 PseudoToken = Whitespace + group(PseudoExtras, Number, Funny, ContStr, Name)
 
-fstringprog = re.compile(fstring.FSTRING_START)
+interpolated_string_prog = re.compile(fstring.INTERPOLATED_STRING_START)
 tokenprog, pseudoprog, single3prog, double3prog = map(
     re.compile, (Token, PseudoToken, Single3, Double3))
 
@@ -519,12 +520,12 @@ def generate_tokens(readline):
             yield stashed
             stashed = None
           yield (COMMENT, token, spos, epos, line)
-        elif fstringprog.match(token):
+        elif interpolated_string_prog.match(token):
           if stashed:
             yield stashed
             stashed = None
           try:
-            value, epos, line, physical_lines = fstring.scan_fstring(
+            value, epos, line, physical_lines = fstring.scan_interpolated_string(
                 readline, line, lnum, start)
           except fstring.FStringError as error:
             raise TokenError(*error.args) from error
