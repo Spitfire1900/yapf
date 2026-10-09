@@ -112,9 +112,16 @@ class _SubtypeAssigner(pytree_visitor.PyTreeVisitor):
     self.Visit_expr_stmt(node)
 
   def Visit_typeparam(self, node):  # pylint: disable=invalid-name
-    # Reuse annotation and variadic spacing without marking these as function
-    # value parameters (PARAMETER_START/PARAMETER_STOP).
-    self._ProcessArgLists(node)
+    # Type defaults use assignment spacing, not value-parameter/keyword-arg
+    # spacing. Only direct children are annotated: a call in a default must
+    # retain its own keyword-argument spacing.
+    for child in node.children:
+      self.Visit(child)
+      if isinstance(child, pytree.Leaf):
+        subtype = (
+            subtypes.ASSIGN_OPERATOR if child.value == '=' else
+            _ARGLIST_TOKEN_TO_SUBTYPE.get(child.value, subtypes.NONE))
+        _AppendTokenSubtype(child, subtype)
 
   def Visit_expr_stmt(self, node):  # pylint: disable=invalid-name
     # expr_stmt ::= testlist_star_expr (augassign (yield_expr|testlist)

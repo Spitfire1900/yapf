@@ -177,7 +177,8 @@ dictsetmaker: ( ((test ':' asexpr_test | '**' expr)
 type_stmt: "type" NAME [typeparams] '=' test
 typeparams: '[' typeparamslist ']'
 typeparamslist: typeparam (',' typeparam)* [',']
-typeparam: NAME [':' test] | '*' NAME | '**' NAME
+# PEP 696: only a TypeVarTuple default may be a starred expression.
+typeparam: NAME [':' test] ['=' test] | '*' NAME ['=' (test|star_expr)] | '**' NAME ['=' test]
 
 classdef: 'class' NAME [typeparams] ['(' [arglist] ')'] ':' suite
 

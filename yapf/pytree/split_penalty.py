@@ -138,6 +138,11 @@ class _SplitPenaltyAssigner(pytree_visitor.PyTreeVisitor):
 
   def Visit_typeparam(self, node):  # pylint: disable=invalid-name
     self.Visit_tname(node)
+    for index, child in enumerate(node.children[:-1]):
+      if child.type == grammar_token.EQUAL:
+        _SetSplitPenalty(child, NAMED_ASSIGN)
+        _SetSplitPenalty(
+            pytree_utils.FirstLeafNode(node.children[index + 1]), NAMED_ASSIGN)
     if node.children[0].type in (grammar_token.STAR, grammar_token.DOUBLESTAR):
       _SetUnbreakable(node.children[1])
 

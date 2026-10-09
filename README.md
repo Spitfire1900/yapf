@@ -354,6 +354,7 @@ optional arguments:
 ## Python syntax support
 
 * Python 3.12 - [PEP 695 - Type parameter syntax](https://peps.python.org/pep-0695/) - **Supported.** See [implementation notes](docs/pep-0695.md).
+* Python 3.13 - [PEP 696 - Type parameter defaults](https://peps.python.org/pep-0696/) - **Supported.** See [implementation notes](docs/pep-0696.md).
 * Python 3.12 - [PEP 701 - F-string syntax](https://peps.python.org/pep-0701/) - **Not yet supported in this branch.**
 
 ## Knobs
